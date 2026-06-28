@@ -1,0 +1,85 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ReminderType {
+  MEAL
+  SUPPLEMENT
+  APPOINTMENT
+  ASSESSMENT
+}
+
+enum RepeatType {
+  NONE
+  DAILY
+  WEEKLY
+}
+
+enum ReminderStatus {
+  PENDING
+  COMPLETED
+  OVERDUE
+}
+
+model Parent {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  passwordHash String
+  name         String
+  createdAt    DateTime   @default(now())
+
+  children     Child[]
+  reminders    Reminder[]
+}
+
+model Child {
+  id                  String        @id @default(cuid())
+  parentId            String
+  externalGenexcelId  String        @unique
+  name                String
+  linkedAt            DateTime      @default(now())
+
+  parent              Parent        @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  reminders           Reminder[]
+  activityLogs        ActivityLog[]
+  @@index([parentId])
+}
+
+model Reminder {
+  id        String           @id @default(cuid())
+  parentId  String
+  childId   String
+  title     String
+  type      ReminderType
+  dueAt     DateTime
+  repeat    RepeatType
+  status    ReminderStatus   @default(PENDING)
+  createdAt DateTime         @default(now())
+
+  parent    Parent           @relation(fields: [parentId], references: [id],onDelete: Cascade)
+  child     Child            @relation(fields: [childId], references: [id],onDelete: Cascade)
+  @@index([parentId])
+  @@index([childId])
+}
+
+model ActivityLog {
+  id         String   @id @default(cuid())
+  childId    String
+  kind       String
+  label      String
+  occurredAt DateTime
+
+  child      Child    @relation(fields: [childId], references: [id],onDelete: Cascade)
+  @@index([childId])
+}
+
