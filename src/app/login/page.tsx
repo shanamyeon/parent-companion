@@ -1,8 +1,52 @@
+"use client";
 import AuthLayout from "@/components/AuthLayout";
 import Button from "@/components/Button";
 import Input from "@/components/Input";
+import { signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
+
+import { useForm, FieldErrors } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { toast } from "sonner";
+
+import {
+  loginSchema,
+  LoginFormData,
+} from "@/schemas/loginSchema";
 
 export default function LoginPage() {
+  const router = useRouter();
+  const {
+  register,
+  handleSubmit,
+  reset,
+  formState: { errors },
+} = useForm<LoginFormData>({
+  resolver: zodResolver(loginSchema),
+});
+const onSubmit = async (data: LoginFormData) => {
+  const result = await signIn("credentials", {
+    email: data.email,
+    password: data.password,
+    redirect: false,
+  });
+
+  if (result?.error) {
+    toast.error("Invalid email or password.");
+    return;
+  }
+
+  toast.success("Login successful!");
+
+  reset();
+
+  setTimeout(() => {
+    router.push("/dashboard");
+  }, 1200);
+};
+const onError = (errors: FieldErrors<LoginFormData>) => {
+  console.log(errors);
+};
   return (
     <AuthLayout
       title="Welcome back"
@@ -11,24 +55,26 @@ export default function LoginPage() {
       footerLinkText="Create account"
       footerLink="/signup"
     >
-      <form className="space-y-5">
+      <form
+  noValidate
+  onSubmit={handleSubmit(onSubmit, onError)}
+  className="space-y-4"
+>
         <Input
-          label="Email address"
-          name="email"
-          type="email"
-          autoComplete="email"
-          placeholder="parent@example.com"
-          required
-        />
+  label="Email address"
+  type="email"
+  placeholder="parent@example.com"
+  registration={register("email")}
+  error={errors.email?.message}
+/>
 
         <Input
-          label="Password"
-          name="password"
-          type="password"
-          autoComplete="current-password"
-          placeholder="Enter your password"
-          required
-        />
+  label="Password"
+  type="password"
+  placeholder="Enter your password"
+  registration={register("password")}
+  error={errors.password?.message}
+/>
 
         <div className="flex items-center justify-between">
           <label className="flex cursor-pointer items-center gap-2 text-xs text-slate-500">
